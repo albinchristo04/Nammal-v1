@@ -1,0 +1,42 @@
+<h2>What do you want to build next?</h2>
+<p class="subtitle">Homepage is done — pick the next major feature for Nammal</p>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="auth" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>🔐 Auth — Phone OTP Login + Register</h3>
+      <p>SMS OTP via Fast2SMS · JWT access + refresh tokens · Multi-step profile builder (5 steps) · Photo upload to Cloudinary</p>
+    </div>
+  </div>
+  <div class="option" data-choice="browse" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>🔍 Browse — Profile Cards + Filters</h3>
+      <p>Paginated profile grid · Age / district / religion filters · Full profile view · Send interest with guard checks</p>
+    </div>
+  </div>
+  <div class="option" data-choice="interests" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>💌 Interests — Send, Accept, Decline</h3>
+      <p>Received / sent tabs · Accept or decline · 7-day auto-expiry via BullMQ · Guard checks (gender, cooldown, quota)</p>
+    </div>
+  </div>
+  <div class="option" data-choice="chat" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>💬 Chat — Real-time Messaging</h3>
+      <p>Socket.io rooms (mutual matches only) · Message persistence · Unread count · Block + report from chat</p>
+    </div>
+  </div>
+  <div class="option" data-choice="admin" onclick="toggleSelect(this)">
+    <div class="letter">E</div>
+    <div class="content">
+      <h3>🛡️ Admin — Verification Queue</h3>
+      <p>Review pending profiles · Approve / reject with reason · Suspend / ban users · Reports dashboard</p>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:1.5rem">Select one or more — we'll plan them in priority order. Auth is the logical first step since everything else depends on it.</p>

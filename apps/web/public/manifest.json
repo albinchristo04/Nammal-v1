@@ -1,0 +1,48 @@
+{
+  "name": "Nammal — നമ്മൾ",
+  "short_name": "Nammal",
+  "description": "Free matrimony platform for the Kerala community. Nammal koodeyundu.",
+  "start_url": "/browse",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FAF6F1",
+  "theme_color": "#6B1320",
+  "orientation": "portrait-primary",
+  "lang": "ml",
+  "categories": ["lifestyle", "social"],
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/photos/couple-1.jpg",
+      "sizes": "1080x1920",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Browse Kerala matrimony profiles on Nammal"
+    }
+  ]
+}

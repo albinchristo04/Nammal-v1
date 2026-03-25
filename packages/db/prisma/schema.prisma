@@ -1,0 +1,207 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String             @id @default(uuid())
+  phone             String             @unique
+  status            UserStatus         @default(PENDING)
+  gender            Gender?
+  isAdmin           Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+  verifiedAt        DateTime?
+  lastActiveAt      DateTime?
+  adminActions      AdminAction_[]     @relation("AdminActor")
+  adminActionsOn    AdminAction_[]     @relation("AdminTarget")
+  chatsAsA          Chat[]             @relation("ChatUserA")
+  chatsAsB          Chat[]             @relation("ChatUserB")
+  cooldownsReceived InterestCooldown[] @relation("CooldownReceiver")
+  cooldownsSent     InterestCooldown[] @relation("CooldownSender")
+  receivedInterests Interest[]         @relation("ReceivedInterests")
+  sentInterests     Interest[]         @relation("SentInterests")
+  messages          Message[]
+  profile           Profile?
+  receivedReports   Report[]           @relation("Reported")
+  sentReports       Report[]           @relation("Reporter")
+
+  @@map("users")
+}
+
+model Profile {
+  id                String            @id @default(uuid())
+  userId            String            @unique
+  fullName          String            @db.VarChar(100)
+  dateOfBirth       DateTime          @db.Date
+  religion          String            @db.VarChar(50)
+  community         String?           @db.VarChar(50)
+  district          String            @db.VarChar(50)
+  education         String            @db.VarChar(100)
+  occupation        String            @db.VarChar(100)
+  incomeRange       String            @db.VarChar(50)
+  heightCm          Int
+  maritalStatus     MaritalStatus
+  aboutMe           String?
+  star              String?           @db.VarChar(50)
+  rasi              String?           @db.VarChar(50)
+  contactPreference ContactPreference @default(SELF)
+  isDeactivated     Boolean           @default(false)
+  isMatchFound      Boolean           @default(false)
+  createdAt         DateTime          @default(now())
+  photos            ProfilePhoto[]
+  user              User              @relation(fields: [userId], references: [id])
+
+  @@map("profiles")
+}
+
+model ProfilePhoto {
+  id         String   @id @default(uuid())
+  profileId  String
+  url        String
+  isPrimary  Boolean  @default(false)
+  uploadedAt DateTime @default(now())
+  profile    Profile  @relation(fields: [profileId], references: [id])
+
+  @@map("profile_photos")
+}
+
+model Interest {
+  id          String         @id @default(uuid())
+  senderId    String
+  receiverId  String
+  status      InterestStatus @default(PENDING)
+  sentAt      DateTime       @default(now())
+  respondedAt DateTime?
+  expiresAt   DateTime
+  chat        Chat?
+  receiver    User           @relation("ReceivedInterests", fields: [receiverId], references: [id])
+  sender      User           @relation("SentInterests", fields: [senderId], references: [id])
+
+  @@map("interests")
+}
+
+model InterestCooldown {
+  senderId      String
+  receiverId    String
+  cooldownUntil DateTime
+  receiver      User     @relation("CooldownReceiver", fields: [receiverId], references: [id])
+  sender        User     @relation("CooldownSender", fields: [senderId], references: [id])
+
+  @@id([senderId, receiverId])
+  @@map("interest_cooldowns")
+}
+
+model Chat {
+  id         String    @id @default(uuid())
+  interestId String    @unique
+  userAId    String
+  userBId    String
+  createdAt  DateTime  @default(now())
+  isBlocked  Boolean   @default(false)
+  blockedBy  String?
+  interest   Interest  @relation(fields: [interestId], references: [id])
+  userA      User      @relation("ChatUserA", fields: [userAId], references: [id])
+  userB      User      @relation("ChatUserB", fields: [userBId], references: [id])
+  messages   Message[]
+
+  @@map("chats")
+}
+
+model Message {
+  id       String   @id @default(uuid())
+  chatId   String
+  senderId String
+  content  String
+  isRead   Boolean  @default(false)
+  sentAt   DateTime @default(now())
+  chat     Chat     @relation(fields: [chatId], references: [id])
+  sender   User     @relation(fields: [senderId], references: [id])
+
+  @@map("messages")
+}
+
+model Report {
+  id         String       @id @default(uuid())
+  reporterId String
+  reportedId String
+  reason     ReportReason
+  details    String?
+  status     ReportStatus @default(PENDING)
+  createdAt  DateTime     @default(now())
+  reported   User         @relation("Reported", fields: [reportedId], references: [id])
+  reporter   User         @relation("Reporter", fields: [reporterId], references: [id])
+
+  @@map("reports")
+}
+
+model AdminAction_ {
+  id           String      @id @default(uuid())
+  adminId      String
+  targetUserId String
+  action       AdminAction
+  reason       String
+  createdAt    DateTime    @default(now())
+  admin        User        @relation("AdminActor", fields: [adminId], references: [id])
+  targetUser   User        @relation("AdminTarget", fields: [targetUserId], references: [id])
+
+  @@map("admin_actions")
+}
+
+enum UserStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  SUSPENDED
+  DELETED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum MaritalStatus {
+  NEVER_MARRIED
+  DIVORCED
+  WIDOWED
+}
+
+enum ContactPreference {
+  SELF
+  FAMILY
+}
+
+enum InterestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  WITHDRAWN
+}
+
+enum ReportReason {
+  FAKE_PROFILE
+  HARASSMENT
+  INAPPROPRIATE_CONTENT
+  SPAM
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  ACTIONED
+  DISMISSED
+}
+
+enum AdminAction {
+  APPROVED
+  REJECTED
+  SUSPENDED
+  BANNED
+  WARNED
+}

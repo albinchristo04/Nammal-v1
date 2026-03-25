@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #FAF6F1;
+    --foreground: #1A0A05;
+  }
+
+  html {
+    font-family: "Inter", "Noto Sans Malayalam", sans-serif;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    /* Prevent layout shift from scrollbar appearing/disappearing */
+    overflow-y: scroll;
+  }
+
+  /* Visible focus rings for keyboard navigation */
+  :focus-visible {
+    outline: 2px solid #C9A84C;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Remove default focus for mouse/touch but keep for keyboard */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Smooth tap on mobile */
+  button, a, [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* Better image rendering */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+@layer utilities {
+  .font-malayalam {
+    font-family: "Noto Sans Malayalam", sans-serif;
+  }
+
+  .font-serif {
+    font-family: "Cormorant Garamond", Georgia, serif;
+  }
+
+  /* Hide scrollbar while keeping scroll functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe-area-aware padding for fixed bottom bars (notch/home indicator) */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* Full viewport height that accounts for mobile browser chrome */
+  .h-dvh {
+    height: 100dvh;
+  }
+  .min-h-dvh {
+    min-height: 100dvh;
+  }
+}
+
+/* Skip-to-content link for keyboard/screen reader users */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 1rem;
+  z-index: 9999;
+  padding: 0.5rem 1rem;
+  background: #6B1320;
+  color: #FAF6F1;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0 0 8px 8px;
+  text-decoration: none;
+  transition: top 0.1s;
+}
+.skip-link:focus {
+  top: 0;
+}

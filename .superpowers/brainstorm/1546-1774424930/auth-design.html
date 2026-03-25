@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nammal — Auth Page Design Direction</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #F5F0EA; color: #1a1a1a; min-height: 100vh; padding: 2rem; }
+  h1 { font-size: 1.25rem; font-weight: 700; text-align: center; margin-bottom: 0.25rem; color: #6B1320; letter-spacing: 0.05em; text-transform: uppercase; }
+  .sub { text-align: center; color: #888; font-size: 0.85rem; margin-bottom: 2rem; }
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; max-width: 1100px; margin: 0 auto; }
+  .card { background: white; border-radius: 12px; overflow: hidden; cursor: pointer; border: 3px solid transparent; transition: border-color 0.2s, box-shadow 0.2s; }
+  .card:hover { box-shadow: 0 8px 32px rgba(107,19,32,0.15); }
+  .card.selected { border-color: #6B1320; box-shadow: 0 0 0 2px rgba(107,19,32,0.3); }
+  .card-label { padding: 0.75rem 1rem; background: #1a1a1a; color: white; display: flex; justify-content: space-between; align-items: center; }
+  .card-label .letter { font-size: 1.1rem; font-weight: 800; color: #C9A84C; }
+  .card-label .name { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+  .mockup { height: 520px; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+  /* --- Option A: Split Panel --- */
+  .a-wrap { display: flex; height: 100%; }
+  .a-left { width: 45%; background: #6B1320; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 1.5rem; }
+  .a-logo { font-family: Georgia, serif; color: #C9A84C; font-size: 2.2rem; font-weight: 400; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+  .a-tagline { color: rgba(250,246,241,0.7); font-size: 0.65rem; text-align: center; letter-spacing: 0.1em; text-transform: uppercase; }
+  .a-photo-grid { margin-top: 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; width: 100%; }
+  .a-photo { background: rgba(201,168,76,0.25); border-radius: 4px; }
+  .a-photo:nth-child(1) { height: 70px; }
+  .a-photo:nth-child(2) { height: 70px; }
+  .a-photo:nth-child(3) { height: 50px; grid-column: 1 / -1; }
+  .a-right { flex: 1; background: #FAF6F1; display: flex; flex-direction: column; justify-content: center; padding: 1.5rem; }
+  .a-heading { font-family: Georgia, serif; font-size: 1.15rem; color: #6B1320; margin-bottom: 0.3rem; }
+  .a-subtext { font-size: 0.65rem; color: #888; margin-bottom: 1.2rem; }
+  .a-input { width: 100%; height: 36px; background: white; border: 1px solid #E2CEBE; border-radius: 6px; margin-bottom: 0.6rem; padding: 0 0.75rem; font-size: 0.7rem; color: #666; display: flex; align-items: center; }
+  .a-btn { width: 100%; height: 38px; background: #6B1320; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #C9A84C; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 0.4rem; }
+  .a-divider { display: flex; align-items: center; gap: 0.5rem; margin: 0.8rem 0; }
+  .a-line { flex: 1; height: 1px; background: #E2CEBE; }
+  .a-or { font-size: 0.6rem; color: #bbb; }
+  .a-otp { text-align: center; font-size: 0.6rem; color: #6B1320; font-weight: 600; letter-spacing: 0.05em; }
+
+  /* --- Option B: Centered Modal over Blurred BG --- */
+  .b-wrap { background: linear-gradient(135deg, #3d0a10 0%, #6B1320 50%, #4e1a00 100%); height: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
+  .b-bg-photos { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3px; opacity: 0.15; }
+  .b-bg-photo { background: rgba(201,168,76,0.4); }
+  .b-card { background: rgba(255,255,255,0.12); backdrop-filter: blur(20px); border: 1px solid rgba(201,168,76,0.3); border-radius: 16px; padding: 1.75rem 1.5rem; width: 200px; position: relative; z-index: 1; }
+  .b-logo { font-family: Georgia, serif; color: #C9A84C; font-size: 1.8rem; font-weight: 400; text-align: center; margin-bottom: 0.2rem; }
+  .b-tagline { font-size: 0.55rem; color: rgba(250,246,241,0.5); text-align: center; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 1.2rem; }
+  .b-input { width: 100%; height: 32px; background: rgba(255,255,255,0.1); border: 1px solid rgba(201,168,76,0.3); border-radius: 6px; margin-bottom: 0.5rem; }
+  .b-btn { width: 100%; height: 34px; background: #C9A84C; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #4e0e17; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 0.3rem; }
+  .b-note { text-align: center; font-size: 0.55rem; color: rgba(250,246,241,0.4); margin-top: 0.7rem; }
+
+  /* --- Option C: Minimalist with Kerala Pattern Accent --- */
+  .c-wrap { background: #FAF6F1; height: 100%; display: flex; flex-direction: column; }
+  .c-top { height: 6px; background: linear-gradient(90deg, #6B1320, #C9A84C, #6B1320); }
+  .c-body { flex: 1; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+  .c-inner { width: 100%; max-width: 240px; }
+  .c-logo-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; }
+  .c-dot { width: 8px; height: 8px; background: #C9A84C; border-radius: 50%; }
+  .c-logo-text { font-family: Georgia, serif; font-size: 1.6rem; color: #6B1320; }
+  .c-heading { font-size: 0.85rem; color: #1a1a1a; font-weight: 700; margin-bottom: 0.2rem; }
+  .c-sub { font-size: 0.6rem; color: #999; margin-bottom: 1.2rem; }
+  .c-label { font-size: 0.6rem; color: #6B1320; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 0.3rem; }
+  .c-input { width: 100%; height: 36px; background: white; border: 1.5px solid #E2CEBE; border-radius: 8px; margin-bottom: 1rem; padding: 0 0.75rem; font-size: 0.7rem; color: #555; display: flex; align-items: center; }
+  .c-input.focused { border-color: #6B1320; }
+  .c-btn { width: 100%; height: 40px; background: #6B1320; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75rem; font-weight: 600; }
+  .c-pattern { height: 40px; background: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(107,19,32,0.05) 4px, rgba(107,19,32,0.05) 8px); margin-top: 1rem; border-radius: 8px; border: 1px dashed #E2CEBE; display: flex; align-items: center; justify-content: center; }
+  .c-pattern-text { font-size: 0.55rem; color: #C9A84C; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+
+  /* Bottom legend */
+  .legend { max-width: 1100px; margin: 1.5rem auto 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .leg-item { background: white; border-radius: 8px; padding: 0.75rem 1rem; }
+  .leg-title { font-size: 0.7rem; font-weight: 700; color: #6B1320; margin-bottom: 0.3rem; letter-spacing: 0.05em; text-transform: uppercase; }
+  .leg-desc { font-size: 0.65rem; color: #666; line-height: 1.4; }
+  .check { color: #16a34a; }
+  .note { font-size: 0.6rem; color: #999; text-align: center; margin-top: 1rem; }
+
+  .selected-indicator { display: none; position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); background: #6B1320; color: #C9A84C; padding: 0.5rem 1.5rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; z-index: 100; }
+  .selected-indicator.visible { display: block; }
+</style>
+</head>
+<body>
+
+<h1>നമ്മൾ &nbsp;·&nbsp; Auth Page Design</h1>
+<p class="sub">Which login/register layout fits the brand best? Click to select.</p>
+
+<div class="cards">
+
+  <!-- Option A -->
+  <div class="card" id="card-a" onclick="select('a')">
+    <div class="card-label">
+      <span class="letter">A</span>
+      <span class="name">Split Panel</span>
+      <span style="font-size:0.65rem;color:#aaa">Editorial</span>
+    </div>
+    <div class="mockup">
+      <div class="a-wrap">
+        <div class="a-left">
+          <div class="a-logo">നമ്മൾ</div>
+          <div class="a-tagline">Kerala's premium matrimony</div>
+          <div class="a-photo-grid">
+            <div class="a-photo"></div>
+            <div class="a-photo"></div>
+            <div class="a-photo"></div>
+          </div>
+        </div>
+        <div class="a-right">
+          <div class="a-heading">Welcome back</div>
+          <div class="a-subtext">Enter your phone number to continue</div>
+          <div class="a-input">+91 &nbsp;· &nbsp;Mobile number</div>
+          <div class="a-btn">Send OTP</div>
+          <div class="a-divider"><div class="a-line"></div><div class="a-or">or</div><div class="a-line"></div></div>
+          <div class="a-otp">New to Nammal? Create profile →</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B -->
+  <div class="card" id="card-b" onclick="select('b')">
+    <div class="card-label">
+      <span class="letter">B</span>
+      <span class="name">Glass Overlay</span>
+      <span style="font-size:0.65rem;color:#aaa">Immersive</span>
+    </div>
+    <div class="mockup">
+      <div class="b-wrap">
+        <div class="b-bg-photos">
+          <div class="b-bg-photo"></div>
+          <div class="b-bg-photo"></div>
+          <div class="b-bg-photo"></div>
+          <div class="b-bg-photo"></div>
+          <div class="b-bg-photo"></div>
+          <div class="b-bg-photo"></div>
+        </div>
+        <div class="b-card">
+          <div class="b-logo">നമ്മൾ</div>
+          <div class="b-tagline">Kerala's premium matrimony</div>
+          <div class="b-input"></div>
+          <div class="b-input"></div>
+          <div class="b-btn">Send OTP →</div>
+          <div class="b-note">OTP via Fast2SMS · 60s resend</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option C -->
+  <div class="card" id="card-c" onclick="select('c')">
+    <div class="card-label">
+      <span class="letter">C</span>
+      <span class="name">Minimalist</span>
+      <span style="font-size:0.65rem;color:#aaa">Clean & Fast</span>
+    </div>
+    <div class="mockup">
+      <div class="c-wrap">
+        <div class="c-top"></div>
+        <div class="c-body">
+          <div class="c-inner">
+            <div class="c-logo-row">
+              <div class="c-dot"></div>
+              <div class="c-logo-text">നമ്മൾ</div>
+              <div class="c-dot"></div>
+            </div>
+            <div class="c-heading">Sign in</div>
+            <div class="c-sub">Enter your registered mobile number</div>
+            <div class="c-label">Mobile Number</div>
+            <div class="c-input focused">+91  •  ___________</div>
+            <div class="c-btn">Get OTP</div>
+            <div class="c-pattern">
+              <div class="c-pattern-text">New here? Create your profile</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="leg-item">
+    <div class="leg-title">A — Split Panel</div>
+    <div class="leg-desc"><span class="check">✓</span> Matches homepage hero split<br><span class="check">✓</span> Brand photos visible on login<br><span class="check">✓</span> Luxury editorial feel<br>Best for desktop + tablet</div>
+  </div>
+  <div class="leg-item">
+    <div class="leg-title">B — Glass Overlay</div>
+    <div class="leg-desc"><span class="check">✓</span> Premium immersive feel<br><span class="check">✓</span> Works well on mobile<br>⚠ Contrast care needed<br>⚠ Heavier — verify perf</div>
+  </div>
+  <div class="leg-item">
+    <div class="leg-title">C — Minimalist</div>
+    <div class="leg-desc"><span class="check">✓</span> Fastest to load<br><span class="check">✓</span> Best accessibility score<br><span class="check">✓</span> Kerala accent via gradient bar<br>Cleanest mobile UX</div>
+  </div>
+</div>
+
+<p class="note">All options use Cormorant Garamond · Crimson #6B1320 · Gold #C9A84C — consistent with homepage</p>
+
+<div class="selected-indicator" id="indicator"></div>
+
+<script>
+let selected = null;
+function select(id) {
+  if (selected === id) {
+    document.getElementById('card-' + selected).classList.remove('selected');
+    selected = null;
+    document.getElementById('indicator').classList.remove('visible');
+    return;
+  }
+  if (selected) document.getElementById('card-' + selected).classList.remove('selected');
+  selected = id;
+  document.getElementById('card-' + id).classList.add('selected');
+  const names = { a: 'A — Split Panel', b: 'B — Glass Overlay', c: 'C — Minimalist' };
+  document.getElementById('indicator').textContent = '✓ Selected: ' + names[id];
+  document.getElementById('indicator').classList.add('visible');
+}
+</script>
+</body>
+</html>

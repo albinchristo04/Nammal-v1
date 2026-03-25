@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { api, uploadPhoto } from "@/lib/api";
+import { requestNotificationToken } from "@/lib/firebase";
 import { useAuthStore } from "@/store/auth";
 
 // ─── Schemas ─────────────────────────────────────────────────────────────────
@@ -162,6 +163,14 @@ export default function RegisterPage() {
         { id: user.id, phone: user.phone ?? phone, status: user.status as never, gender: user.gender as never, isAdmin: user.isAdmin },
         token
       );
+      // Register FCM token for push notifications (best-effort)
+      requestNotificationToken().then((fcmToken) => {
+        if (fcmToken) {
+          api.put("/api/auth/fcm-token", { token: fcmToken }, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).catch(() => {});
+        }
+      }).catch(() => {});
       // If existing user with profile, skip to browse
       if (user.gender) { router.push("/browse"); return; }
       setStep(2);

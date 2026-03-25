@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { api } from "@/lib/api";
+import { requestNotificationToken } from "@/lib/firebase";
 import { useAuthStore } from "@/store/auth";
 
 const phoneSchema = z.object({
@@ -78,6 +79,14 @@ export default function LoginPage() {
         { id: user.id, phone: user.phone ?? phone, status: user.status as never, gender: user.gender as never, isAdmin: user.isAdmin },
         accessToken
       );
+      // Register FCM token for push notifications (best-effort)
+      requestNotificationToken().then((fcmToken) => {
+        if (fcmToken) {
+          api.put("/api/auth/fcm-token", { token: fcmToken }, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          }).catch(() => {});
+        }
+      }).catch(() => {});
       // Admin → dashboard; new user (no gender) → register; existing → browse
       if (user.isAdmin) {
         router.push("/admin");

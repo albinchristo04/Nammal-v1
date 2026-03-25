@@ -4,7 +4,7 @@ import { prisma } from "@nammal/db";
 import { requireAuth, type AuthRequest } from "../middleware/auth.js";
 import { AppError } from "../middleware/errorHandler.js";
 import multer from "multer";
-import { uploadToCloudinary } from "../lib/cloudinary.js";
+import { uploadToCloudinary, deleteFromCloudinary } from "../lib/cloudinary.js";
 
 export const profileRouter = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
@@ -99,6 +99,100 @@ profileRouter.post(
     }
   }
 );
+
+// DELETE /api/profile/me/photos/:id — delete a single photo
+profileRouter.delete("/me/photos/:id", requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const profile = await prisma.profile.findUnique({ where: { userId: req.userId! } });
+    if (!profile) throw new AppError(404, "Profile not found");
+
+    const photo = await prisma.profilePhoto.findFirst({
+      where: { id: req.params.id, profileId: profile.id },
+    });
+    if (!photo) throw new AppError(404, "Photo not found");
+
+    // Extract Cloudinary public_id from URL  e.g. ".../nammal/profiles/xxx/yyy" → "nammal/profiles/xxx/yyy"
+    const publicId = photo.url.replace(/^.*\/upload\/(?:v\d+\/)?/, "").replace(/\.[^.]+$/, "");
+    await deleteFromCloudinary(publicId);
+    await prisma.profilePhoto.delete({ where: { id: photo.id } });
+
+    // If deleted photo was primary, promote the next one
+    if (photo.isPrimary) {
+      const next = await prisma.profilePhoto.findFirst({ where: { profileId: profile.id } });
+      if (next) await prisma.profilePhoto.update({ where: { id: next.id }, data: { isPrimary: true } });
+    }
+
+    res.json({ message: "Photo deleted" });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/profile/me/deactivate — toggle deactivation
+profileRouter.put("/me/deactivate", requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const profile = await prisma.profile.findUnique({ where: { userId: req.userId! } });
+    if (!profile) throw new AppError(404, "Profile not found");
+    const updated = await prisma.profile.update({
+      where: { userId: req.userId! },
+      data: { isDeactivated: !profile.isDeactivated },
+    });
+    res.json({ isDeactivated: updated.isDeactivated });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/profile/me/match-found — mark profile as match found
+profileRouter.put("/me/match-found", requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    await prisma.profile.update({
+      where: { userId: req.userId! },
+      data: { isMatchFound: true },
+    });
+    res.json({ message: "Profile marked as match found" });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/profile/me — full account deletion
+profileRouter.delete("/me", requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const userId = req.userId!;
+
+    // Delete all Cloudinary photos first
+    const profile = await prisma.profile.findUnique({
+      where: { userId },
+      include: { photos: true },
+    });
+    if (profile) {
+      for (const photo of profile.photos) {
+        const publicId = photo.url.replace(/^.*\/upload\/(?:v\d+\/)?/, "").replace(/\.[^.]+$/, "");
+        await deleteFromCloudinary(publicId).catch(() => {});
+      }
+    }
+
+    // Anonymise messages sent by this user
+    await prisma.message.updateMany({
+      where: { senderId: userId },
+      data: { content: "[This user has deleted their account]" },
+    });
+
+    // Hard-delete everything else in order (FK constraints)
+    await prisma.interestCooldown.deleteMany({ where: { OR: [{ senderId: userId }, { receiverId: userId }] } });
+    await prisma.report.deleteMany({ where: { OR: [{ reporterId: userId }, { reportedId: userId }] } });
+    await prisma.adminAction_.deleteMany({ where: { OR: [{ adminId: userId }, { targetUserId: userId }] } });
+    await prisma.interest.deleteMany({ where: { OR: [{ senderId: userId }, { receiverId: userId }] } });
+    await prisma.profilePhoto.deleteMany({ where: { profile: { userId } } });
+    await prisma.profile.deleteMany({ where: { userId } });
+    await prisma.user.update({ where: { id: userId }, data: { status: "DELETED" } });
+
+    res.clearCookie("refreshToken").json({ message: "Account deleted" });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // GET /api/profiles — browse verified profiles (opposite gender)
 profileRouter.get("/", requireAuth, async (req: AuthRequest, res, next) => {

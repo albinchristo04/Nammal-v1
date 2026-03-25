@@ -1,9 +1,12 @@
 import type { Server } from "socket.io";
 import jwt from "jsonwebtoken";
 import { prisma } from "@nammal/db";
+import { sendPush } from "../lib/fcm.js";
+
+// Track online users: userId → Set of socket IDs
+const onlineUsers = new Map<string, Set<string>>();
 
 export function registerSocketHandlers(io: Server) {
-  // Auth middleware
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token;
     if (!token) return next(new Error("Unauthorized"));
@@ -18,12 +21,13 @@ export function registerSocketHandlers(io: Server) {
 
   io.on("connection", (socket) => {
     const userId: string = socket.data.userId;
-    console.log(`[socket] User ${userId} connected`);
 
-    // Join personal room for notifications
+    // Track online presence
+    if (!onlineUsers.has(userId)) onlineUsers.set(userId, new Set());
+    onlineUsers.get(userId)!.add(socket.id);
+
     socket.join(`user:${userId}`);
 
-    // Join a chat room
     socket.on("join-chat", async (chatId: string) => {
       const chat = await prisma.chat.findUnique({ where: { id: chatId } });
       if (!chat) return;
@@ -32,7 +36,6 @@ export function registerSocketHandlers(io: Server) {
       socket.join(`chat:${chatId}`);
     });
 
-    // Mark messages as read
     socket.on("mark-read", async (chatId: string) => {
       const chat = await prisma.chat.findUnique({ where: { id: chatId } });
       if (!chat || (chat.userAId !== userId && chat.userBId !== userId)) return;
@@ -42,7 +45,6 @@ export function registerSocketHandlers(io: Server) {
       });
     });
 
-    // Send message
     socket.on("send-message", async (data: { chatId: string; content: string }) => {
       const { chatId, content } = data;
       if (!content?.trim()) return;
@@ -57,17 +59,42 @@ export function registerSocketHandlers(io: Server) {
 
       io.to(`chat:${chatId}`).emit("new-message", message);
 
-      // Notify offline user
       const recipientId = chat.userAId === userId ? chat.userBId : chat.userAId;
+
+      // In-app notification
       io.to(`user:${recipientId}`).emit("notification", {
         type: "new-message",
         chatId,
         preview: content.slice(0, 50),
       });
+
+      // FCM push only if recipient is offline
+      const isOnline = (onlineUsers.get(recipientId)?.size ?? 0) > 0;
+      if (!isOnline) {
+        const recipient = await prisma.user.findUnique({
+          where: { id: recipientId },
+          select: { fcmToken: true },
+        });
+        if (recipient?.fcmToken) {
+          const senderProfile = await prisma.profile.findUnique({
+            where: { userId },
+            select: { fullName: true },
+          });
+          await sendPush(recipient.fcmToken, {
+            title: senderProfile?.fullName ?? "New message",
+            body: content.slice(0, 100),
+            data: { url: `/chat?id=${chatId}`, type: "new_message", chatId },
+          });
+        }
+      }
     });
 
     socket.on("disconnect", () => {
-      console.log(`[socket] User ${userId} disconnected`);
+      const sockets = onlineUsers.get(userId);
+      if (sockets) {
+        sockets.delete(socket.id);
+        if (sockets.size === 0) onlineUsers.delete(userId);
+      }
     });
   });
 }

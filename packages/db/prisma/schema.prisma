@@ -13,6 +13,7 @@ model User {
   status            UserStatus         @default(PENDING)
   gender            Gender?
   isAdmin           Boolean            @default(false)
+  fcmToken          String?
   createdAt         DateTime           @default(now())
   verifiedAt        DateTime?
   lastActiveAt      DateTime?

@@ -3,6 +3,7 @@ import { prisma } from "@nammal/db";
 import { requireAuth, type AuthRequest } from "../middleware/auth.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { addToInterestExpiryQueue } from "../jobs/expireInterests.js";
+import { sendPush } from "../lib/fcm.js";
 
 export const interestRouter = Router();
 
@@ -54,6 +55,15 @@ interestRouter.post("/", requireAuth, async (req: AuthRequest, res, next) => {
 
     // Queue auto-expiry job
     await addToInterestExpiryQueue(interest.id, expiresAt);
+
+    // Push notification to receiver
+    if (receiver.fcmToken) {
+      await sendPush(receiver.fcmToken, {
+        title: "New interest received",
+        body: "Someone is interested in your profile. Check it out!",
+        data: { url: "/interests", type: "interest_received" },
+      });
+    }
 
     res.status(201).json(interest);
   } catch (err) {
@@ -109,6 +119,16 @@ interestRouter.put("/:id/accept", requireAuth, async (req: AuthRequest, res, nex
         },
       }),
     ]);
+
+    // Push notification to original sender
+    const sender = await prisma.user.findUnique({ where: { id: interest.senderId } });
+    if (sender?.fcmToken) {
+      await sendPush(sender.fcmToken, {
+        title: "Interest accepted!",
+        body: "Your interest was accepted. You can now chat.",
+        data: { url: "/chat", type: "interest_accepted" },
+      });
+    }
 
     res.json(updatedInterest);
   } catch (err) {

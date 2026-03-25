@@ -33,7 +33,17 @@
       "mcp__plugin_firebase_firebase__firebase_get_environment",
       "mcp__plugin_firebase_firebase__firebase_login",
       "Bash(npx firebase-tools:*)",
-      "Bash(pnpm --filter @nammal/web add firebase)"
+      "Bash(pnpm --filter @nammal/web add firebase)",
+      "mcp__plugin_supabase_supabase__list_projects",
+      "mcp__plugin_supabase_supabase__list_tables",
+      "mcp__plugin_supabase_supabase__execute_sql",
+      "Bash(node -e \":*)",
+      "Bash(curl -s -H \"authorization: Rntk9mGy7PbAWFVENnLa4UaHaK1p5n9MhU7xg1dZDByUvLljmZ9sNqzn4tmw\" \"https://www.fast2sms.com/dev/wallet\")",
+      "Bash(curl -s -H \"authorization: voSZgGZtQ35X0lFfNXPDNUdtYVd92eZDGC7dhEbMvG9NnJwJfasxc3MtZ2JM\" \"https://www.fast2sms.com/dev/wallet\")",
+      "Bash(curl -s \"https://www.fast2sms.com/dev/wallet?authorization=voSZgGZtQ35X0lFfNXPDNUdtYVd92eZDGC7dhEbMvG9NnJwJfasxc3MtZ2JM\")",
+      "Bash(pnpm --filter @nammal/api add firebase-admin)",
+      "mcp__plugin_supabase_supabase__apply_migration",
+      "mcp__plugin_firebase_firebase__firebase_get_project"
     ]
   }
 }

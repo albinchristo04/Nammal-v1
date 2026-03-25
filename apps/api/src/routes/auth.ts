@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import { prisma } from "@nammal/db";
 import { sendOtp, verifyOtp } from "../lib/otp.js";
 import { AppError } from "../middleware/errorHandler.js";
+import { requireAuth, type AuthRequest } from "../middleware/auth.js";
 
 const otpLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
@@ -116,4 +117,19 @@ authRouter.post("/refresh", async (req, res, next) => {
 // POST /api/auth/logout
 authRouter.post("/logout", (_req, res) => {
   res.clearCookie("refreshToken").json({ message: "Logged out" });
+});
+
+// PUT /api/auth/fcm-token — save device FCM token
+authRouter.put("/fcm-token", requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const { token } = req.body;
+    if (!token || typeof token !== "string") throw new AppError(400, "token is required");
+    await prisma.user.update({
+      where: { id: req.userId! },
+      data: { fcmToken: token },
+    });
+    res.json({ message: "FCM token saved" });
+  } catch (err) {
+    next(err);
+  }
 });

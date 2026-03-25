@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "@nammal/db";
 import { requireAdmin, type AuthRequest } from "../middleware/auth.js";
 import { AppError } from "../middleware/errorHandler.js";
+import { sendPush } from "../lib/fcm.js";
 
 export const adminRouter = Router();
 adminRouter.use(requireAdmin);
@@ -30,6 +31,13 @@ adminRouter.put("/users/:id/approve", async (req: AuthRequest, res, next) => {
     await prisma.adminAction.create({
       data: { adminId: req.userId!, targetUserId: user.id, action: "APPROVED", reason: "Profile verified" },
     });
+    if (user.fcmToken) {
+      await sendPush(user.fcmToken, {
+        title: "Profile approved!",
+        body: "Your profile has been verified. You can now browse and send interests.",
+        data: { url: "/browse", type: "profile_approved" },
+      });
+    }
     res.json({ message: "Profile approved" });
   } catch (err) {
     next(err);
@@ -48,6 +56,13 @@ adminRouter.put("/users/:id/reject", async (req: AuthRequest, res, next) => {
     await prisma.adminAction.create({
       data: { adminId: req.userId!, targetUserId: user.id, action: "REJECTED", reason },
     });
+    if (user.fcmToken) {
+      await sendPush(user.fcmToken, {
+        title: "Profile not approved",
+        body: `Your profile was not approved: ${reason}. Please update your profile and resubmit.`,
+        data: { url: "/pending", type: "profile_rejected" },
+      });
+    }
     res.json({ message: "Profile rejected" });
   } catch (err) {
     next(err);

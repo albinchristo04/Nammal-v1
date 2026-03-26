@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  useEffect, useRef, useState, useCallback, FormEvent,
+  useEffect, useRef, useState, useCallback, FormEvent, Suspense,
 } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -145,7 +145,7 @@ function ReportModal({
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-export default function ChatPage() {
+function ChatPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuthStore();
@@ -538,5 +538,13 @@ export default function ChatPage() {
         />
       )}
     </>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense>
+      <ChatPageInner />
+    </Suspense>
   );
 }

@@ -6,6 +6,21 @@ import { prisma } from "@nammal/db";
 import { sendOtp, verifyOtp } from "../lib/otp.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { requireAuth, type AuthRequest } from "../middleware/auth.js";
+import { getApps, initializeApp, cert } from "firebase-admin/app";
+import { getAuth as getFirebaseAuth } from "firebase-admin/auth";
+
+function ensureFirebaseAdmin() {
+  if (getApps().length === 0) {
+    initializeApp({
+      credential: cert({
+        projectId:   process.env.FIREBASE_PROJECT_ID!,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
+        privateKey:  process.env.FIREBASE_PRIVATE_KEY!.replace(/\\n/g, "\n"),
+      }),
+    });
+  }
+  return getFirebaseAuth();
+}
 
 const otpLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
@@ -111,6 +126,58 @@ authRouter.post("/refresh", async (req, res, next) => {
 // POST /api/auth/logout
 authRouter.post("/logout", (_req, res) => {
   res.clearCookie("refreshToken").json({ message: "Logged out" });
+});
+
+// POST /api/auth/firebase-phone — verify Firebase Phone Auth ID token → issue JWT
+authRouter.post("/firebase-phone", async (req, res, next) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken || typeof idToken !== "string") throw new AppError(400, "idToken required");
+
+    const decoded = await ensureFirebaseAdmin().verifyIdToken(idToken);
+    const rawPhone = decoded.phone_number;
+    if (!rawPhone) throw new AppError(400, "No phone number in Firebase token");
+
+    // Strip +91 country code — store as 10-digit Indian number
+    const phone = rawPhone.replace(/^\+91/, "");
+
+    let user = await prisma.user.findUnique({ where: { phone } });
+    if (!user) {
+      user = await prisma.user.create({ data: { phone, status: "PENDING" } });
+    }
+
+    const role = user.isAdmin ? "admin" : "user";
+    const accessToken = jwt.sign(
+      { sub: user.id, role },
+      process.env.JWT_SECRET!,
+      { expiresIn: "15m" }
+    );
+    const refreshToken = jwt.sign(
+      { sub: user.id, role },
+      process.env.JWT_REFRESH_SECRET!,
+      { expiresIn: "30d" }
+    );
+
+    res
+      .cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+      })
+      .json({
+        accessToken,
+        user: {
+          id: user.id,
+          phone: user.phone,
+          status: user.status,
+          gender: user.gender ?? null,
+          isAdmin: user.isAdmin,
+        },
+      });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // PUT /api/auth/fcm-token — save device FCM token

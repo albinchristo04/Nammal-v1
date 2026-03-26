@@ -8,8 +8,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { api } from "@/lib/api";
-import { requestNotificationToken } from "@/lib/firebase";
+import { requestNotificationToken, sendPhoneOtp, confirmPhoneOtp } from "@/lib/firebase";
 import { useAuthStore } from "@/store/auth";
+import type { ConfirmationResult } from "firebase/auth";
+import type { RecaptchaVerifier } from "firebase/auth";
 
 const phoneSchema = z.object({
   phone: z.string().regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit mobile number"),
@@ -38,6 +40,8 @@ export default function LoginPage() {
   const [apiError, setApiError] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
   const otpInputRef = useRef<HTMLInputElement>(null);
+  const confirmationRef = useRef<ConfirmationResult | null>(null);
+  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
 
   const phoneForm = useForm<PhoneForm>({ resolver: zodResolver(phoneSchema) });
   const otpForm = useForm<OtpForm>({ resolver: zodResolver(otpSchema) });
@@ -52,22 +56,30 @@ export default function LoginPage() {
   const onPhoneSubmit = async (data: PhoneForm) => {
     setApiError("");
     try {
-      await api.post("/api/auth/send-otp", { phone: data.phone });
+      const { confirmationResult, verifier } = await sendPhoneOtp(
+        data.phone,
+        "recaptcha-container",
+        recaptchaVerifierRef.current
+      );
+      confirmationRef.current = confirmationResult;
+      recaptchaVerifierRef.current = verifier;
       setPhone(data.phone);
       setStep("otp");
       setResendCooldown(60);
       setTimeout(() => otpInputRef.current?.focus(), 100);
     } catch (err: unknown) {
-      setApiError(err instanceof Error ? err.message : "Failed to send OTP");
+      setApiError(err instanceof Error ? err.message : "Failed to send OTP. Please try again.");
     }
   };
 
   const onOtpSubmit = async (data: OtpForm) => {
     setApiError("");
     try {
+      if (!confirmationRef.current) throw new Error("Please request OTP first");
+      const idToken = await confirmPhoneOtp(confirmationRef.current, data.otp);
       const res = await api.post<{ accessToken: string; user: { id: string; status: string; gender: string; phone: string; isAdmin: boolean } }>(
-        "/api/auth/verify-otp",
-        { phone, otp: data.otp }
+        "/api/auth/firebase-phone",
+        { idToken }
       );
       const { accessToken, user } = res.data;
       localStorage.setItem("accessToken", accessToken);
@@ -103,7 +115,13 @@ export default function LoginPage() {
   const handleResend = async () => {
     if (resendCooldown > 0) return;
     try {
-      await api.post("/api/auth/send-otp", { phone });
+      const { confirmationResult, verifier } = await sendPhoneOtp(
+        phone,
+        "recaptcha-container",
+        recaptchaVerifierRef.current
+      );
+      confirmationRef.current = confirmationResult;
+      recaptchaVerifierRef.current = verifier;
       setResendCooldown(60);
       otpForm.reset();
       setApiError("");
@@ -114,6 +132,8 @@ export default function LoginPage() {
 
   return (
     <main className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Firebase invisible reCAPTCHA mount point */}
+      <div id="recaptcha-container" />
 
       {/* Background — photo grid */}
       <div className="absolute inset-0 grid grid-cols-3 grid-rows-2 gap-1">

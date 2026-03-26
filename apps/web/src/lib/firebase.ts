@@ -1,5 +1,11 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getMessaging, getToken, onMessage, type MessagePayload } from "firebase/messaging";
+import {
+  getAuth,
+  signInWithPhoneNumber,
+  RecaptchaVerifier,
+  type ConfirmationResult,
+} from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -11,6 +17,42 @@ const firebaseConfig = {
 };
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+
+// ─── Phone Auth ──────────────────────────────────────────────────────────────
+
+/**
+ * Send OTP to the given 10-digit Indian phone number via Firebase Phone Auth.
+ * Returns a ConfirmationResult that must be passed to confirmPhoneOtp().
+ * containerId: id of an existing DOM element for the invisible reCAPTCHA widget.
+ */
+export async function sendPhoneOtp(
+  phone: string,
+  containerId: string,
+  existingVerifier?: RecaptchaVerifier | null
+): Promise<{ confirmationResult: ConfirmationResult; verifier: RecaptchaVerifier }> {
+  const auth = getAuth(app);
+  // Clear old verifier to allow re-use of the same container
+  if (existingVerifier) {
+    try { existingVerifier.clear(); } catch { /* ignore */ }
+  }
+  const verifier = new RecaptchaVerifier(auth, containerId, { size: "invisible" });
+  const confirmationResult = await signInWithPhoneNumber(auth, `+91${phone}`, verifier);
+  return { confirmationResult, verifier };
+}
+
+/**
+ * Confirm the OTP entered by the user and return a Firebase ID token.
+ * Pass the ID token to POST /api/auth/firebase-phone to receive a JWT.
+ */
+export async function confirmPhoneOtp(
+  confirmationResult: ConfirmationResult,
+  otp: string
+): Promise<string> {
+  const credential = await confirmationResult.confirm(otp);
+  return credential.user.getIdToken();
+}
+
+// ─── Push Notifications ──────────────────────────────────────────────────────
 
 /**
  * Request notification permission and return the FCM registration token.

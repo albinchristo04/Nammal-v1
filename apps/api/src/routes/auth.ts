@@ -63,12 +63,6 @@ authRouter.post("/verify-otp", async (req, res, next) => {
       { expiresIn: "30d" }
     );
 
-    // Fetch profile gender if it exists
-    const profile = await prisma.profile.findUnique({
-      where: { userId: user.id },
-      select: { gender: true },
-    });
-
     res
       .cookie("refreshToken", refreshToken, {
         httpOnly: true,
@@ -82,7 +76,7 @@ authRouter.post("/verify-otp", async (req, res, next) => {
           id: user.id,
           phone: user.phone,
           status: user.status,
-          gender: profile?.gender ?? null,
+          gender: user.gender ?? null,
           isAdmin: user.isAdmin,
         },
       });

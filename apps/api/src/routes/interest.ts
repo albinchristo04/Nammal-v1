@@ -102,7 +102,7 @@ interestRouter.get("/sent", requireAuth, async (req: AuthRequest, res, next) => 
 // PUT /api/interests/:id/accept
 interestRouter.put("/:id/accept", requireAuth, async (req: AuthRequest, res, next) => {
   try {
-    const interest = await prisma.interest.findUnique({ where: { id: req.params.id } });
+    const interest = await prisma.interest.findUnique({ where: { id: String(req.params.id) } });
     if (!interest || interest.receiverId !== req.userId!) throw new AppError(404, "Interest not found");
     if (interest.status !== "PENDING") throw new AppError(400, "Interest is no longer pending");
 
@@ -139,7 +139,7 @@ interestRouter.put("/:id/accept", requireAuth, async (req: AuthRequest, res, nex
 // PUT /api/interests/:id/decline
 interestRouter.put("/:id/decline", requireAuth, async (req: AuthRequest, res, next) => {
   try {
-    const interest = await prisma.interest.findUnique({ where: { id: req.params.id } });
+    const interest = await prisma.interest.findUnique({ where: { id: String(req.params.id) } });
     if (!interest || interest.receiverId !== req.userId!) throw new AppError(404, "Interest not found");
     if (interest.status !== "PENDING") throw new AppError(400, "Interest is no longer pending");
 
@@ -165,7 +165,7 @@ interestRouter.put("/:id/decline", requireAuth, async (req: AuthRequest, res, ne
 // DELETE /api/interests/:id — withdraw
 interestRouter.delete("/:id", requireAuth, async (req: AuthRequest, res, next) => {
   try {
-    const interest = await prisma.interest.findUnique({ where: { id: req.params.id } });
+    const interest = await prisma.interest.findUnique({ where: { id: String(req.params.id) } });
     if (!interest || interest.senderId !== req.userId!) throw new AppError(404, "Interest not found");
     if (interest.status !== "PENDING") throw new AppError(400, "Cannot withdraw a non-pending interest");
 

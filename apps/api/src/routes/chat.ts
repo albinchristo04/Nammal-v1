@@ -29,7 +29,7 @@ chatRouter.get("/", requireAuth, async (req: AuthRequest, res, next) => {
 // GET /api/chats/:id/messages
 chatRouter.get("/:id/messages", requireAuth, async (req: AuthRequest, res, next) => {
   try {
-    const chat = await prisma.chat.findUnique({ where: { id: req.params.id } });
+    const chat = await prisma.chat.findUnique({ where: { id: String(req.params.id) } });
     if (!chat) throw new AppError(404, "Chat not found");
     if (chat.userAId !== req.userId! && chat.userBId !== req.userId!) {
       throw new AppError(403, "Forbidden");
@@ -52,7 +52,7 @@ chatRouter.get("/:id/messages", requireAuth, async (req: AuthRequest, res, next)
 // POST /api/chats/:id/block
 chatRouter.post("/:id/block", requireAuth, async (req: AuthRequest, res, next) => {
   try {
-    const chat = await prisma.chat.findUnique({ where: { id: req.params.id } });
+    const chat = await prisma.chat.findUnique({ where: { id: String(req.params.id) } });
     if (!chat) throw new AppError(404, "Chat not found");
     if (chat.userAId !== req.userId! && chat.userBId !== req.userId!) {
       throw new AppError(403, "Forbidden");
@@ -71,7 +71,7 @@ chatRouter.post("/:id/block", requireAuth, async (req: AuthRequest, res, next) =
 // POST /api/chats/:id/report
 chatRouter.post("/:id/report", requireAuth, async (req: AuthRequest, res, next) => {
   try {
-    const chat = await prisma.chat.findUnique({ where: { id: req.params.id } });
+    const chat = await prisma.chat.findUnique({ where: { id: String(req.params.id) } });
     if (!chat) throw new AppError(404, "Chat not found");
     if (chat.userAId !== req.userId! && chat.userBId !== req.userId!) {
       throw new AppError(403, "Forbidden");

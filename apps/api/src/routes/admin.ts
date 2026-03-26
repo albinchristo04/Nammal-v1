@@ -25,10 +25,10 @@ adminRouter.get("/queue", async (_req, res, next) => {
 adminRouter.put("/users/:id/approve", async (req: AuthRequest, res, next) => {
   try {
     const user = await prisma.user.update({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       data: { status: "VERIFIED", verifiedAt: new Date() },
     });
-    await prisma.adminAction.create({
+    await prisma.adminAction_.create({
       data: { adminId: req.userId!, targetUserId: user.id, action: "APPROVED", reason: "Profile verified" },
     });
     if (user.fcmToken) {
@@ -50,10 +50,10 @@ adminRouter.put("/users/:id/reject", async (req: AuthRequest, res, next) => {
     const { reason } = req.body;
     if (!reason) throw new AppError(400, "Reason required");
     const user = await prisma.user.update({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       data: { status: "REJECTED" },
     });
-    await prisma.adminAction.create({
+    await prisma.adminAction_.create({
       data: { adminId: req.userId!, targetUserId: user.id, action: "REJECTED", reason },
     });
     if (user.fcmToken) {
@@ -75,10 +75,10 @@ adminRouter.put("/users/:id/suspend", async (req: AuthRequest, res, next) => {
     const { reason } = req.body;
     if (!reason) throw new AppError(400, "Reason required");
     const user = await prisma.user.update({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       data: { status: "SUSPENDED" },
     });
-    await prisma.adminAction.create({
+    await prisma.adminAction_.create({
       data: { adminId: req.userId!, targetUserId: user.id, action: "SUSPENDED", reason },
     });
     res.json({ message: "User suspended" });
@@ -93,10 +93,10 @@ adminRouter.put("/users/:id/ban", async (req: AuthRequest, res, next) => {
     const { reason } = req.body;
     if (!reason) throw new AppError(400, "Reason required");
     const user = await prisma.user.update({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       data: { status: "DELETED" },
     });
-    await prisma.adminAction.create({
+    await prisma.adminAction_.create({
       data: { adminId: req.userId!, targetUserId: user.id, action: "BANNED", reason },
     });
     res.json({ message: "User banned" });
@@ -127,7 +127,7 @@ adminRouter.put("/reports/:id", async (req: AuthRequest, res, next) => {
   try {
     const { action } = req.body; // "dismissed" | "actioned"
     await prisma.report.update({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       data: { status: action === "actioned" ? "ACTIONED" : "DISMISSED" },
     });
     res.json({ message: "Report updated" });

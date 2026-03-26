@@ -16,7 +16,7 @@ const otpLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-export const authRouter = Router();
+export const authRouter: ReturnType<typeof Router> = Router();
 
 const phoneSchema = z.object({
   phone: z.string().regex(/^[6-9]\d{9}$/, "Invalid Indian mobile number"),

@@ -4,7 +4,7 @@ import { requireAdmin, type AuthRequest } from "../middleware/auth.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { sendPush } from "../lib/fcm.js";
 
-export const adminRouter = Router();
+export const adminRouter: ReturnType<typeof Router> = Router();
 adminRouter.use(requireAdmin);
 
 // GET /api/admin/queue — pending verification profiles

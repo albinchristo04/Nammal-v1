@@ -3,7 +3,7 @@ import { prisma } from "@nammal/db";
 import { requireAuth, type AuthRequest } from "../middleware/auth.js";
 import { AppError } from "../middleware/errorHandler.js";
 
-export const chatRouter = Router();
+export const chatRouter: ReturnType<typeof Router> = Router();
 
 // GET /api/chats — get all chat threads
 chatRouter.get("/", requireAuth, async (req: AuthRequest, res, next) => {

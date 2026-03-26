@@ -6,7 +6,7 @@ import { AppError } from "../middleware/errorHandler.js";
 import multer from "multer";
 import { uploadToCloudinary, deleteFromCloudinary } from "../lib/cloudinary.js";
 
-export const profileRouter = Router();
+export const profileRouter: ReturnType<typeof Router> = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 const profileSchema = z.object({

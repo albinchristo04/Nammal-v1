@@ -5,7 +5,7 @@ import { AppError } from "../middleware/errorHandler.js";
 import { addToInterestExpiryQueue } from "../jobs/expireInterests.js";
 import { sendPush } from "../lib/fcm.js";
 
-export const interestRouter = Router();
+export const interestRouter: ReturnType<typeof Router> = Router();
 
 const MAX_PENDING_INTERESTS = 10;
 const COOLDOWN_DAYS = 30;

@@ -64,7 +64,7 @@ function RejectModal({
         <p className="text-sm mb-4" style={{ color: "rgba(26,10,5,0.5)" }}>Rejection reason for <strong>{name}</strong></p>
         <textarea
           className="w-full border rounded-xl px-3 py-2.5 text-sm resize-none outline-none focus:ring-2"
-          style={{ borderColor: "#E2CEBE", focusRingColor: "#6B1320", minHeight: 90 }}
+          style={{ borderColor: "#E2CEBE", minHeight: 90 }}
           placeholder="e.g. Blurry photo, incomplete details, fake profile…"
           value={reason}
           onChange={(e) => setReason(e.target.value)}

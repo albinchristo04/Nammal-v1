@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -11,6 +11,15 @@ import { api, uploadPhoto } from "@/lib/api";
 import { requestNotificationToken, sendPhoneOtp, confirmPhoneOtp } from "@/lib/firebase";
 import { useAuthStore } from "@/store/auth";
 import type { ConfirmationResult, RecaptchaVerifier } from "firebase/auth";
+
+const bgPhotos = [
+  "/photos/couple-6.jpg",
+  "/photos/couple-7.jpg",
+  "/photos/couple-1.jpg",
+  "/photos/couple-4.jpg",
+  "/photos/couple-5.jpg",
+  "/photos/couple-3.jpg",
+];
 
 // ─── Schemas ─────────────────────────────────────────────────────────────────
 
@@ -80,25 +89,30 @@ const STEPS = [
   "About me & photos",
 ];
 
-// ─── Field helpers ────────────────────────────────────────────────────────────
+// ─── Field helpers (dark glass theme) ─────────────────────────────────────────
 
-const inputCls = `w-full px-4 py-3 rounded-xl border text-sm outline-none transition-colors
-  bg-white border-[rgba(107,19,32,0.15)] text-[#1A0A05] placeholder-[rgba(107,19,32,0.3)]
-  focus:border-[#6B1320] focus:ring-2 focus:ring-[rgba(107,19,32,0.1)]`;
-
-const selectCls = `w-full px-4 py-3 rounded-xl border text-sm outline-none transition-colors
-  bg-white border-[rgba(107,19,32,0.15)] text-[#1A0A05]
-  focus:border-[#6B1320] focus:ring-2 focus:ring-[rgba(107,19,32,0.1)]`;
+const inputStyle: React.CSSProperties = {
+  background: "rgba(255,255,255,0.08)",
+  border: "1px solid rgba(201,168,76,0.25)",
+  color: "#FAF6F1",
+  caretColor: "#C9A84C",
+};
+const inputCls = "w-full px-4 py-3 rounded-xl text-sm outline-none transition-all";
+const selectStyle: React.CSSProperties = {
+  ...inputStyle,
+  WebkitAppearance: "none" as never,
+};
+const selectCls = inputCls;
 
 function FieldError({ msg }: { msg?: string }) {
   if (!msg) return null;
-  return <p className="text-xs mt-1" style={{ color: "#dc2626" }}>{msg}</p>;
+  return <p className="text-xs mt-1" style={{ color: "#f87171" }}>{msg}</p>;
 }
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
     <label className="block text-xs font-semibold tracking-widest uppercase mb-1.5"
-      style={{ color: "rgba(107,19,32,0.5)" }}>
+      style={{ color: "rgba(250,246,241,0.5)" }}>
       {children}
     </label>
   );
@@ -125,6 +139,13 @@ export default function RegisterPage() {
 
   // Accumulated profile data across steps
   const [profileData, setProfileData] = useState<Record<string, unknown>>({});
+
+  // Countdown for resend OTP
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
 
   const phoneForm = useForm<PhoneForm>({ resolver: zodResolver(phoneSchema) });
   const otpForm = useForm<OtpForm>({ resolver: zodResolver(otpSchema) });
@@ -259,294 +280,326 @@ export default function RegisterPage() {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 py-12"
-      style={{ backgroundColor: "#FAF6F1" }}>
+    <main className="relative min-h-screen flex items-center justify-center overflow-hidden py-12 px-4">
       {/* Firebase invisible reCAPTCHA mount point */}
       <div id="recaptcha-container-reg" />
-      <div className="w-full max-w-lg">
 
-        {/* Header */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-3">
-            <svg width="28" height="28" viewBox="0 0 36 36" fill="none" aria-hidden="true">
-              <circle cx="13" cy="18" r="10" stroke="#6B1320" strokeWidth="2.5" fill="none"/>
-              <circle cx="23" cy="18" r="10" stroke="#C9A84C" strokeWidth="2.5" fill="none"/>
+      {/* Background — photo grid (same as login) */}
+      <div className="absolute inset-0 grid grid-cols-3 grid-rows-2 gap-1">
+        {bgPhotos.map((src, i) => (
+          <div key={i} className="relative overflow-hidden">
+            <Image src={src} fill alt="" className="object-cover" sizes="33vw" priority={i < 3} />
+          </div>
+        ))}
+      </div>
+
+      {/* Dark overlay */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: "linear-gradient(135deg, rgba(26,10,5,0.88) 0%, rgba(107,19,32,0.82) 50%, rgba(26,10,5,0.90) 100%)",
+        }}
+      />
+
+      {/* Subtle pattern */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: "repeating-linear-gradient(60deg, transparent, transparent 40px, rgba(201,168,76,0.03) 40px, rgba(201,168,76,0.03) 41px)",
+        }}
+      />
+
+      {/* Glass card */}
+      <div
+        className="relative z-10 w-full max-w-md mx-4"
+        style={{
+          background: "rgba(255,255,255,0.08)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          border: "1px solid rgba(201,168,76,0.25)",
+          borderRadius: "20px",
+          padding: "2.5rem 2rem",
+          boxShadow: "0 24px 80px rgba(0,0,0,0.5)",
+        }}
+      >
+        {/* Logo */}
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <svg width="32" height="32" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+              <circle cx="13" cy="18" r="10" stroke="#C9A84C" strokeWidth="2" fill="none" strokeOpacity="0.8"/>
+              <circle cx="23" cy="18" r="10" stroke="rgba(250,246,241,0.5)" strokeWidth="2" fill="none"/>
             </svg>
-            <span className="font-serif text-xl font-semibold" style={{ color: "#6B1320" }}>Nammal</span>
-            <span className="font-malayalam text-sm" style={{ color: "#C9A84C" }}>നമ്മൾ</span>
-          </Link>
-          <h1 className="font-serif text-2xl" style={{ color: "#1A0A05" }}>Create your free profile</h1>
-          <p className="text-sm mt-1" style={{ color: "rgba(107,19,32,0.5)" }}>
-            Step {Math.min(step + 1, 5)} of 5 — {STEPS[Math.min(step, 4)]}
+            <span className="font-serif text-2xl font-semibold" style={{ color: "#FAF6F1" }}>
+              Nammal
+            </span>
+          </div>
+          <p className="font-malayalam text-sm" style={{ color: "#C9A84C" }}>നമ്മൾ</p>
+          <p className="text-sm mt-3" style={{ color: "rgba(250,246,241,0.6)" }}>
+            {step <= 1
+              ? "Create your free profile"
+              : `Step ${Math.min(step, 5)} of 5 — ${STEPS[Math.min(step, 4)]}`}
           </p>
         </div>
 
         {/* Progress bar */}
-        {step > 0 && (
-          <div className="flex gap-1.5 mb-8">
+        {step > 1 && (
+          <div className="flex gap-1.5 mb-6">
             {STEPS.map((_, i) => (
               <div key={i} className="flex-1 h-1 rounded-full transition-all duration-500"
-                style={{ backgroundColor: i < step ? "#6B1320" : i === step - 1 ? "#C9A84C" : "rgba(107,19,32,0.12)" }}
+                style={{ backgroundColor: i < step ? "#C9A84C" : i === step ? "rgba(201,168,76,0.4)" : "rgba(250,246,241,0.12)" }}
               />
             ))}
           </div>
         )}
 
-        {/* Card */}
-        <div className="rounded-2xl p-8"
-          style={{ backgroundColor: "white", border: "1px solid rgba(107,19,32,0.1)", boxShadow: "0 4px 40px rgba(107,19,32,0.08)" }}>
-
-          {apiError && (
-            <div className="mb-4 px-4 py-3 rounded-xl text-sm" style={{ backgroundColor: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }}>
-              {apiError}
-            </div>
-          )}
-
-          {/* ── Step 0: Phone ── */}
-          {step === 0 && (
-            <form onSubmit={phoneForm.handleSubmit(onPhoneSubmit)} className="space-y-5">
-              <div>
-                <Label>Mobile Number</Label>
-                <div className="flex">
-                  <span className="inline-flex items-center px-3 text-sm rounded-l-xl"
-                    style={{ background: "rgba(107,19,32,0.05)", border: "1px solid rgba(107,19,32,0.15)", borderRight: "none", color: "rgba(107,19,32,0.6)" }}>
-                    +91
-                  </span>
-                  <input {...phoneForm.register("phone")} type="tel" inputMode="numeric"
-                    maxLength={10} placeholder="9876543210"
-                    className={inputCls + " rounded-l-none"} />
-                </div>
-                <FieldError msg={phoneForm.formState.errors.phone?.message} />
-              </div>
-              <SubmitBtn loading={phoneForm.formState.isSubmitting} label="Send OTP →" />
-              <p className="text-center text-xs" style={{ color: "rgba(107,19,32,0.4)" }}>
-                Already registered?{" "}
-                <Link href="/login" style={{ color: "#6B1320" }} className="font-semibold">Sign in</Link>
-              </p>
-            </form>
-          )}
-
-          {/* ── Step 1: OTP ── */}
-          {step === 1 && (
-            <form onSubmit={otpForm.handleSubmit(onOtpSubmit)} className="space-y-5">
-              <p className="text-sm text-center" style={{ color: "rgba(107,19,32,0.6)" }}>
-                OTP sent to <strong>+91 {phone}</strong>
-              </p>
-              <div>
-                <Label>6-digit OTP</Label>
-                <input {...otpForm.register("otp")} type="text" inputMode="numeric"
-                  maxLength={6} placeholder="· · · · · ·" autoFocus
-                  className={inputCls + " text-center text-2xl tracking-[0.5em]"} />
-                <FieldError msg={otpForm.formState.errors.otp?.message} />
-              </div>
-              <SubmitBtn loading={otpForm.formState.isSubmitting} label="Verify OTP →" />
-              <div className="flex justify-between text-xs" style={{ color: "rgba(107,19,32,0.4)" }}>
-                <button type="button" onClick={() => setStep(0)}>← Change number</button>
-                <button type="button" onClick={handleResend} disabled={resendCooldown > 0}
-                  style={{ color: resendCooldown > 0 ? "rgba(107,19,32,0.3)" : "#6B1320" }}>
-                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend OTP"}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* ── Step 2: Personal details ── */}
-          {step === 2 && (
-            <form onSubmit={step2Form.handleSubmit(onStep2)} className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <Label>Full Name</Label>
-                  <input {...step2Form.register("fullName")} placeholder="Your full name" className={inputCls} />
-                  <FieldError msg={step2Form.formState.errors.fullName?.message} />
-                </div>
-                <div>
-                  <Label>Date of Birth</Label>
-                  <input {...step2Form.register("dateOfBirth")} type="date" className={inputCls}
-                    max={new Date(Date.now() - 18 * 365.25 * 86400000).toISOString().split("T")[0]} />
-                  <FieldError msg={step2Form.formState.errors.dateOfBirth?.message} />
-                </div>
-                <div>
-                  <Label>Gender</Label>
-                  <select {...step2Form.register("gender")} className={selectCls}>
-                    <option value="">Select</option>
-                    <option value="MALE">Male</option>
-                    <option value="FEMALE">Female</option>
-                  </select>
-                  <FieldError msg={step2Form.formState.errors.gender?.message} />
-                </div>
-                <div>
-                  <Label>Religion</Label>
-                  <select {...step2Form.register("religion")} className={selectCls}>
-                    <option value="">Select</option>
-                    {RELIGIONS.map((r) => <option key={r}>{r}</option>)}
-                  </select>
-                  <FieldError msg={step2Form.formState.errors.religion?.message} />
-                </div>
-                <div>
-                  <Label>Community <span style={{ color: "rgba(107,19,32,0.35)" }}>(optional)</span></Label>
-                  <input {...step2Form.register("community")} placeholder="e.g. Nair, Ezhava…" className={inputCls} />
-                </div>
-                <div className="col-span-2">
-                  <Label>Marital Status</Label>
-                  <select {...step2Form.register("maritalStatus")} className={selectCls}>
-                    <option value="">Select</option>
-                    <option value="NEVER_MARRIED">Never married</option>
-                    <option value="DIVORCED">Divorced</option>
-                    <option value="WIDOWED">Widowed</option>
-                  </select>
-                  <FieldError msg={step2Form.formState.errors.maritalStatus?.message} />
-                </div>
-              </div>
-              <StepNav onBack={() => setStep(1)} loading={step2Form.formState.isSubmitting} />
-            </form>
-          )}
-
-          {/* ── Step 3: Location & education ── */}
-          {step === 3 && (
-            <form onSubmit={step3Form.handleSubmit(onStep3)} className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <Label>District</Label>
-                  <select {...step3Form.register("district")} className={selectCls}>
-                    <option value="">Select district</option>
-                    {KERALA_DISTRICTS.map((d) => <option key={d}>{d}</option>)}
-                  </select>
-                  <FieldError msg={step3Form.formState.errors.district?.message} />
-                </div>
-                <div className="col-span-2">
-                  <Label>Highest Education</Label>
-                  <input {...step3Form.register("education")} placeholder="e.g. B.Tech, MBA, MBBS…" className={inputCls} />
-                  <FieldError msg={step3Form.formState.errors.education?.message} />
-                </div>
-                <div className="col-span-2">
-                  <Label>Occupation</Label>
-                  <input {...step3Form.register("occupation")} placeholder="e.g. Software Engineer, Doctor…" className={inputCls} />
-                  <FieldError msg={step3Form.formState.errors.occupation?.message} />
-                </div>
-                <div className="col-span-2">
-                  <Label>Annual Income</Label>
-                  <select {...step3Form.register("incomeRange")} className={selectCls}>
-                    <option value="">Select range</option>
-                    {INCOME_RANGES.map((i) => <option key={i}>{i}</option>)}
-                  </select>
-                  <FieldError msg={step3Form.formState.errors.incomeRange?.message} />
-                </div>
-              </div>
-              <StepNav onBack={() => setStep(2)} loading={step3Form.formState.isSubmitting} />
-            </form>
-          )}
-
-          {/* ── Step 4: Physical & family ── */}
-          {step === 4 && (
-            <form onSubmit={step4Form.handleSubmit(onStep4)} className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <Label>Height (cm)</Label>
-                  <input {...step4Form.register("heightCm")} type="number" min={130} max={220}
-                    placeholder="e.g. 165" className={inputCls} />
-                  <FieldError msg={step4Form.formState.errors.heightCm?.message} />
-                </div>
-                <div>
-                  <Label>Star (Nakshatra) <span style={{ color: "rgba(107,19,32,0.35)" }}>(optional)</span></Label>
-                  <select {...step4Form.register("star")} className={selectCls}>
-                    <option value="">Select</option>
-                    {STARS.map((s) => <option key={s}>{s}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <Label>Rasi <span style={{ color: "rgba(107,19,32,0.35)" }}>(optional)</span></Label>
-                  <select {...step4Form.register("rasi")} className={selectCls}>
-                    <option value="">Select</option>
-                    {RASIS.map((r) => <option key={r}>{r}</option>)}
-                  </select>
-                </div>
-                <div className="col-span-2">
-                  <Label>Contact preference</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {(["SELF", "FAMILY"] as const).map((val) => (
-                      <label key={val} className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all"
-                        style={{
-                          border: `1.5px solid ${step4Form.watch("contactPreference") === val ? "#6B1320" : "rgba(107,19,32,0.15)"}`,
-                          backgroundColor: step4Form.watch("contactPreference") === val ? "rgba(107,19,32,0.05)" : "white",
-                        }}>
-                        <input type="radio" {...step4Form.register("contactPreference")} value={val} className="sr-only" />
-                        <span className="text-sm font-medium" style={{ color: "#1A0A05" }}>
-                          {val === "SELF" ? "Self" : "Through family"}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <StepNav onBack={() => setStep(3)} loading={step4Form.formState.isSubmitting} />
-            </form>
-          )}
-
-          {/* ── Step 5: About & photos ── */}
-          {step === 5 && (
-            <form onSubmit={step5Form.handleSubmit(onStep5)} className="space-y-5">
-              <div>
-                <Label>About Me <span style={{ color: "rgba(107,19,32,0.35)" }}>(optional)</span></Label>
-                <textarea {...step5Form.register("aboutMe")} rows={4} maxLength={500}
-                  placeholder="Share a little about yourself, your values, and what you're looking for…"
-                  className={inputCls + " resize-none"} />
-                <p className="text-xs mt-1 text-right" style={{ color: "rgba(107,19,32,0.35)" }}>
-                  {step5Form.watch("aboutMe")?.length ?? 0}/500
-                </p>
-              </div>
-
-              {/* Photo upload */}
-              <div>
-                <Label>Photos <span style={{ color: "#dc2626" }}>*</span> <span style={{ color: "rgba(107,19,32,0.35)" }}>(1–5 photos)</span></Label>
-                <div className="grid grid-cols-3 gap-3">
-                  {photoPreviews.map((src, i) => (
-                    <div key={i} className="relative aspect-square rounded-xl overflow-hidden"
-                      style={{ border: "1.5px solid rgba(107,19,32,0.15)" }}>
-                      <Image src={src} fill alt="Preview" className="object-cover" sizes="120px" />
-                      <button type="button" onClick={() => removePhoto(i)}
-                        className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
-                        style={{ backgroundColor: "rgba(26,10,5,0.75)", color: "white" }}>
-                        ×
-                      </button>
-                      {i === 0 && (
-                        <span className="absolute bottom-1 left-1 text-xs px-1.5 py-0.5 rounded font-semibold"
-                          style={{ backgroundColor: "#C9A84C", color: "#4e0e17" }}>
-                          Primary
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                  {photos.length < 5 && (
-                    <button type="button" onClick={() => fileRef.current?.click()}
-                      className="aspect-square rounded-xl flex flex-col items-center justify-center gap-1 transition-colors"
-                      style={{ border: "1.5px dashed rgba(107,19,32,0.25)", color: "rgba(107,19,32,0.4)" }}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                      </svg>
-                      <span className="text-xs">Add photo</span>
-                    </button>
-                  )}
-                </div>
-                <input ref={fileRef} type="file" accept="image/*" multiple className="sr-only"
-                  onChange={addPhoto} />
-                <p className="text-xs mt-2" style={{ color: "rgba(107,19,32,0.4)" }}>
-                  First photo is your primary. Max 5MB each.
-                </p>
-              </div>
-
-              <StepNav onBack={() => setStep(4)} loading={uploading} submitLabel={uploading ? "Submitting…" : "Submit profile →"} />
-            </form>
-          )}
-        </div>
-
-        {/* Step dots */}
-        {step > 1 && (
-          <div className="flex justify-center gap-2 mt-6">
-            {[2,3,4,5].map((s) => (
-              <div key={s} className="w-1.5 h-1.5 rounded-full transition-all"
-                style={{ backgroundColor: step >= s ? "#6B1320" : "rgba(107,19,32,0.2)" }} />
-            ))}
+        {apiError && (
+          <div className="mb-4 px-4 py-3 rounded-xl text-sm" style={{ background: "rgba(248,113,113,0.15)", color: "#f87171", border: "1px solid rgba(248,113,113,0.25)" }}>
+            {apiError}
           </div>
+        )}
+
+        {/* ── Step 0: Phone ── */}
+        {step === 0 && (
+          <form onSubmit={phoneForm.handleSubmit(onPhoneSubmit)} className="space-y-4">
+            <div>
+              <Label>Mobile Number</Label>
+              <div className="flex">
+                <span
+                  className="inline-flex items-center px-3 text-sm font-medium rounded-l-xl"
+                  style={{
+                    background: "rgba(255,255,255,0.08)",
+                    border: "1px solid rgba(201,168,76,0.25)",
+                    borderRight: "none",
+                    color: "rgba(250,246,241,0.7)",
+                  }}
+                >
+                  +91
+                </span>
+                <input {...phoneForm.register("phone")} type="tel" inputMode="numeric"
+                  maxLength={10} placeholder="9876543210"
+                  className={inputCls + " rounded-l-none rounded-r-xl"} style={inputStyle} />
+              </div>
+              <FieldError msg={phoneForm.formState.errors.phone?.message} />
+            </div>
+            <SubmitBtn loading={phoneForm.formState.isSubmitting} label="Send OTP →" />
+            <p className="text-center text-xs" style={{ color: "rgba(250,246,241,0.35)" }}>
+              Already registered?{" "}
+              <Link href="/login" style={{ color: "#C9A84C" }} className="font-medium">Sign in</Link>
+            </p>
+          </form>
+        )}
+
+        {/* ── Step 1: OTP ── */}
+        {step === 1 && (
+          <form onSubmit={otpForm.handleSubmit(onOtpSubmit)} className="space-y-4">
+            <p className="text-sm text-center" style={{ color: "rgba(250,246,241,0.6)" }}>
+              OTP sent to <strong style={{ color: "#FAF6F1" }}>+91 {phone}</strong>
+            </p>
+            <div>
+              <Label>6-digit OTP</Label>
+              <input {...otpForm.register("otp")} type="text" inputMode="numeric"
+                maxLength={6} placeholder="· · · · · ·" autoFocus
+                className={inputCls + " text-center text-2xl tracking-[0.5em] rounded-xl"} style={inputStyle} />
+              <FieldError msg={otpForm.formState.errors.otp?.message} />
+            </div>
+            <SubmitBtn loading={otpForm.formState.isSubmitting} label="Verify OTP →" />
+            <div className="flex justify-between text-xs" style={{ color: "rgba(250,246,241,0.4)" }}>
+              <button type="button" onClick={() => setStep(0)}>← Change number</button>
+              <button type="button" onClick={handleResend} disabled={resendCooldown > 0}
+                className="disabled:opacity-40"
+                style={{ color: resendCooldown > 0 ? "rgba(250,246,241,0.3)" : "#C9A84C" }}>
+                {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend OTP"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ── Step 2: Personal details ── */}
+        {step === 2 && (
+          <form onSubmit={step2Form.handleSubmit(onStep2)} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label>Full Name</Label>
+                <input {...step2Form.register("fullName")} placeholder="Your full name" className={inputCls + " rounded-xl"} style={inputStyle} />
+                <FieldError msg={step2Form.formState.errors.fullName?.message} />
+              </div>
+              <div>
+                <Label>Date of Birth</Label>
+                <input {...step2Form.register("dateOfBirth")} type="date" className={inputCls + " rounded-xl"} style={inputStyle}
+                  max={new Date(Date.now() - 18 * 365.25 * 86400000).toISOString().split("T")[0]} />
+                <FieldError msg={step2Form.formState.errors.dateOfBirth?.message} />
+              </div>
+              <div>
+                <Label>Gender</Label>
+                <select {...step2Form.register("gender")} className={selectCls + " rounded-xl"} style={selectStyle}>
+                  <option value="">Select</option>
+                  <option value="MALE">Male</option>
+                  <option value="FEMALE">Female</option>
+                </select>
+                <FieldError msg={step2Form.formState.errors.gender?.message} />
+              </div>
+              <div>
+                <Label>Religion</Label>
+                <select {...step2Form.register("religion")} className={selectCls + " rounded-xl"} style={selectStyle}>
+                  <option value="">Select</option>
+                  {RELIGIONS.map((r) => <option key={r}>{r}</option>)}
+                </select>
+                <FieldError msg={step2Form.formState.errors.religion?.message} />
+              </div>
+              <div>
+                <Label>Community <span style={{ color: "rgba(201,168,76,0.5)" }}>(optional)</span></Label>
+                <input {...step2Form.register("community")} placeholder="e.g. Nair, Ezhava…" className={inputCls + " rounded-xl"} style={inputStyle} />
+              </div>
+              <div className="col-span-2">
+                <Label>Marital Status</Label>
+                <select {...step2Form.register("maritalStatus")} className={selectCls + " rounded-xl"} style={selectStyle}>
+                  <option value="">Select</option>
+                  <option value="NEVER_MARRIED">Never married</option>
+                  <option value="DIVORCED">Divorced</option>
+                  <option value="WIDOWED">Widowed</option>
+                </select>
+                <FieldError msg={step2Form.formState.errors.maritalStatus?.message} />
+              </div>
+            </div>
+            <StepNav onBack={() => setStep(1)} loading={step2Form.formState.isSubmitting} />
+          </form>
+        )}
+
+        {/* ── Step 3: Location & education ── */}
+        {step === 3 && (
+          <form onSubmit={step3Form.handleSubmit(onStep3)} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label>District</Label>
+                <select {...step3Form.register("district")} className={selectCls + " rounded-xl"} style={selectStyle}>
+                  <option value="">Select district</option>
+                  {KERALA_DISTRICTS.map((d) => <option key={d}>{d}</option>)}
+                </select>
+                <FieldError msg={step3Form.formState.errors.district?.message} />
+              </div>
+              <div className="col-span-2">
+                <Label>Highest Education</Label>
+                <input {...step3Form.register("education")} placeholder="e.g. B.Tech, MBA, MBBS…" className={inputCls + " rounded-xl"} style={inputStyle} />
+                <FieldError msg={step3Form.formState.errors.education?.message} />
+              </div>
+              <div className="col-span-2">
+                <Label>Occupation</Label>
+                <input {...step3Form.register("occupation")} placeholder="e.g. Software Engineer, Doctor…" className={inputCls + " rounded-xl"} style={inputStyle} />
+                <FieldError msg={step3Form.formState.errors.occupation?.message} />
+              </div>
+              <div className="col-span-2">
+                <Label>Annual Income</Label>
+                <select {...step3Form.register("incomeRange")} className={selectCls + " rounded-xl"} style={selectStyle}>
+                  <option value="">Select range</option>
+                  {INCOME_RANGES.map((i) => <option key={i}>{i}</option>)}
+                </select>
+                <FieldError msg={step3Form.formState.errors.incomeRange?.message} />
+              </div>
+            </div>
+            <StepNav onBack={() => setStep(2)} loading={step3Form.formState.isSubmitting} />
+          </form>
+        )}
+
+        {/* ── Step 4: Physical & family ── */}
+        {step === 4 && (
+          <form onSubmit={step4Form.handleSubmit(onStep4)} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label>Height (cm)</Label>
+                <input {...step4Form.register("heightCm")} type="number" min={130} max={220}
+                  placeholder="e.g. 165" className={inputCls + " rounded-xl"} style={inputStyle} />
+                <FieldError msg={step4Form.formState.errors.heightCm?.message} />
+              </div>
+              <div>
+                <Label>Star (Nakshatra) <span style={{ color: "rgba(201,168,76,0.5)" }}>(optional)</span></Label>
+                <select {...step4Form.register("star")} className={selectCls + " rounded-xl"} style={selectStyle}>
+                  <option value="">Select</option>
+                  {STARS.map((s) => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label>Rasi <span style={{ color: "rgba(201,168,76,0.5)" }}>(optional)</span></Label>
+                <select {...step4Form.register("rasi")} className={selectCls + " rounded-xl"} style={selectStyle}>
+                  <option value="">Select</option>
+                  {RASIS.map((r) => <option key={r}>{r}</option>)}
+                </select>
+              </div>
+              <div className="col-span-2">
+                <Label>Contact preference</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {(["SELF", "FAMILY"] as const).map((val) => (
+                    <label key={val} className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all"
+                      style={{
+                        border: `1.5px solid ${step4Form.watch("contactPreference") === val ? "#C9A84C" : "rgba(201,168,76,0.2)"}`,
+                        backgroundColor: step4Form.watch("contactPreference") === val ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.05)",
+                      }}>
+                      <input type="radio" {...step4Form.register("contactPreference")} value={val} className="sr-only" />
+                      <span className="text-sm font-medium" style={{ color: "#FAF6F1" }}>
+                        {val === "SELF" ? "Self" : "Through family"}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <StepNav onBack={() => setStep(3)} loading={step4Form.formState.isSubmitting} />
+          </form>
+        )}
+
+        {/* ── Step 5: About & photos ── */}
+        {step === 5 && (
+          <form onSubmit={step5Form.handleSubmit(onStep5)} className="space-y-4">
+            <div>
+              <Label>About Me <span style={{ color: "rgba(201,168,76,0.5)" }}>(optional)</span></Label>
+              <textarea {...step5Form.register("aboutMe")} rows={4} maxLength={500}
+                placeholder="Share a little about yourself, your values, and what you're looking for…"
+                className={inputCls + " resize-none rounded-xl"} style={inputStyle} />
+              <p className="text-xs mt-1 text-right" style={{ color: "rgba(250,246,241,0.35)" }}>
+                {step5Form.watch("aboutMe")?.length ?? 0}/500
+              </p>
+            </div>
+
+            {/* Photo upload */}
+            <div>
+              <Label>Photos <span style={{ color: "#f87171" }}>*</span> <span style={{ color: "rgba(201,168,76,0.5)" }}>(1–5 photos)</span></Label>
+              <div className="grid grid-cols-3 gap-3">
+                {photoPreviews.map((src, i) => (
+                  <div key={i} className="relative aspect-square rounded-xl overflow-hidden"
+                    style={{ border: "1.5px solid rgba(201,168,76,0.25)" }}>
+                    <Image src={src} fill alt="Preview" className="object-cover" sizes="120px" />
+                    <button type="button" onClick={() => removePhoto(i)}
+                      className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+                      style={{ backgroundColor: "rgba(26,10,5,0.75)", color: "white" }}>
+                      ×
+                    </button>
+                    {i === 0 && (
+                      <span className="absolute bottom-1 left-1 text-xs px-1.5 py-0.5 rounded font-semibold"
+                        style={{ backgroundColor: "#C9A84C", color: "#4e0e17" }}>
+                        Primary
+                      </span>
+                    )}
+                  </div>
+                ))}
+                {photos.length < 5 && (
+                  <button type="button" onClick={() => fileRef.current?.click()}
+                    className="aspect-square rounded-xl flex flex-col items-center justify-center gap-1 transition-colors"
+                    style={{ border: "1.5px dashed rgba(201,168,76,0.3)", color: "rgba(250,246,241,0.4)" }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                    <span className="text-xs">Add photo</span>
+                  </button>
+                )}
+              </div>
+              <input ref={fileRef} type="file" accept="image/*" multiple className="sr-only"
+                onChange={addPhoto} />
+              <p className="text-xs mt-2" style={{ color: "rgba(250,246,241,0.35)" }}>
+                First photo is your primary. Max 5MB each.
+              </p>
+            </div>
+
+            <StepNav onBack={() => setStep(4)} loading={uploading} submitLabel={uploading ? "Submitting…" : "Submit profile →"} />
+          </form>
         )}
       </div>
     </main>
@@ -559,7 +612,7 @@ function SubmitBtn({ loading, label }: { loading: boolean; label: string }) {
   return (
     <button type="submit" disabled={loading}
       className="w-full py-3.5 text-sm font-bold rounded-xl transition-all disabled:opacity-50"
-      style={{ backgroundColor: "#6B1320", color: "#FAF6F1" }}>
+      style={{ backgroundColor: "#C9A84C", color: "#4e0e17" }}>
       {loading ? "Please wait…" : label}
     </button>
   );
@@ -570,12 +623,12 @@ function StepNav({ onBack, loading, submitLabel }: { onBack: () => void; loading
     <div className="flex gap-3 pt-2">
       <button type="button" onClick={onBack}
         className="flex-1 py-3 text-sm font-medium rounded-xl transition-colors"
-        style={{ border: "1.5px solid rgba(107,19,32,0.2)", color: "#6B1320" }}>
+        style={{ border: "1.5px solid rgba(201,168,76,0.3)", color: "#C9A84C" }}>
         ← Back
       </button>
       <button type="submit" disabled={loading}
         className="flex-1 py-3 text-sm font-bold rounded-xl transition-all disabled:opacity-50"
-        style={{ backgroundColor: "#6B1320", color: "#FAF6F1" }}>
+        style={{ backgroundColor: "#C9A84C", color: "#4e0e17" }}>
         {loading ? "Please wait…" : submitLabel || "Continue →"}
       </button>
     </div>

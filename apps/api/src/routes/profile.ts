@@ -49,7 +49,8 @@ profileRouter.post("/", requireAuth, async (req: AuthRequest, res, next) => {
     if (existing) throw new AppError(409, "Profile already exists");
 
     const profile = await prisma.profile.create({
-      data: { ...data, userId: req.userId!, dateOfBirth: new Date(data.dateOfBirth) },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: { ...data, userId: req.userId!, dateOfBirth: new Date(data.dateOfBirth) } as any,
     });
     res.status(201).json(profile);
   } catch (err) {
@@ -107,7 +108,7 @@ profileRouter.delete("/me/photos/:id", requireAuth, async (req: AuthRequest, res
     if (!profile) throw new AppError(404, "Profile not found");
 
     const photo = await prisma.profilePhoto.findFirst({
-      where: { id: req.params.id, profileId: profile.id },
+      where: { id: String(req.params.id), profileId: profile.id },
     });
     if (!photo) throw new AppError(404, "Photo not found");
 
@@ -247,13 +248,14 @@ profileRouter.get("/:id", requireAuth, async (req: AuthRequest, res, next) => {
     if (!user || user.status !== "VERIFIED") throw new AppError(403, "Profile not verified");
 
     const profile = await prisma.profile.findUnique({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       include: {
         photos: true,
         user: { select: { status: true, gender: true, lastActiveAt: true } },
       },
     });
-    if (!profile || profile.user.status !== "VERIFIED") throw new AppError(404, "Profile not found");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (!profile || (profile as any).user.status !== "VERIFIED") throw new AppError(404, "Profile not found");
 
     res.json(profile);
   } catch (err) {
